@@ -3,241 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mahjong Blast 3.0</title>
+<title>Mahjong 4.0</title>
 
 <style>
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0f172a;
-    color: white;
-    text-align: center;
-}
-
-#topbar {
-    display: flex;
-    justify-content: space-around;
-    flex-wrap: wrap;
-    font-size: 14px;
+    margin:0;
+    background:#0f172a;
+    font-family:Arial;
+    text-align:center;
+    color:white;
 }
 
 #game {
-    display: grid;
-    gap: 6px;
-    justify-content: center;
-    margin: 15px auto;
+    position:relative;
+    width:100%;
+    height:80vh;
+    perspective:1200px;
 }
 
 .tile {
-    background: white;
-    color: black;
-    font-size: clamp(22px, 5vw, 32px);
-    border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    aspect-ratio: 1/1;
-    cursor: pointer;
-    transition: 0.3s;
-    transform: scale(1);
+    position:absolute;
+    width:60px;
+    height:80px;
+    background:white;
+    color:black;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    cursor:pointer;
+    transition: transform .3s, opacity .3s;
+    box-shadow: 0 10px 15px rgba(0,0,0,.4);
 }
 
-.tile.locked {
-    background: #999;
-    cursor: not-allowed;
+.tile.free {
+    box-shadow:0 0 15px gold;
 }
 
 .tile.selected {
-    background: gold;
+    transform: scale(1.1);
 }
 
-.tile.fade {
-    animation: fadeOut 0.4s forwards;
-}
-
-@keyframes fadeOut {
-    to {
-        opacity: 0;
-        transform: scale(0);
-    }
+.tile.removing {
+    transform: translateY(-100px) rotateY(180deg);
+    opacity:0;
 }
 </style>
 </head>
 <body>
 
-<h1>🀄 Mahjong Blast 3.0</h1>
-
-<div id="topbar">
-    <div>Уровень: <span id="level"></span></div>
-    <div>Очки: <span id="score"></span></div>
-    <div>Комбо: <span id="combo"></span></div>
-    <div>Время: <span id="time"></span></div>
-</div>
-
+<h1>🀄 Mahjong Solitaire 4.0</h1>
 <div id="game"></div>
 
 <script>
-const tilesSet = [
+
+const symbols = [
 "🀇","🀈","🀉","🀊","🀋","🀌","🀍",
 "🀙","🀚","🀛","🀜","🀝","🀞","🀟",
 "🀐","🀑","🀒","🀓","🀔","🀕","🀖"
 ];
 
-let level = 1;
-let gridSize;
-let tileTypes;
-let board = [];
-let firstTile = null;
-let score = 0;
-let combo = 0;
-let timeLeft;
-let timer;
+const layout = [
+ // z0 (нижний слой)
+ [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:4,y:0},{x:5,y:0},
+  {x:0,y:1},{x:5,y:1},
+  {x:0,y:2},{x:5,y:2},
+  {x:0,y:3},{x:1,y:3},{x:2,y:3},{x:3,y:3},{x:4,y:3},{x:5,y:3}],
+ // z1
+ [{x:1,y:1},{x:2,y:1},{x:3,y:1},{x:4,y:1},
+  {x:1,y:2},{x:2,y:2},{x:3,y:2},{x:4,y:2}],
+ // z2
+ [{x:2,y:1},{x:3,y:1},
+  {x:2,y:2},{x:3,y:2}]
+];
 
-function initLevel() {
+let tiles = [];
+let first = null;
 
-    clearInterval(timer);
+function generateSolvableBoard() {
 
-    gridSize = 6;
-    tileTypes = 6 + Math.floor(level / 10);
+    let positions = [];
 
-    score = 0;
-    combo = 0;
-    timeLeft = 60;
+    layout.forEach((layer,z)=>{
+        layer.forEach(p=>{
+            positions.push({x:p.x,y:p.y,z:z});
+        });
+    });
 
-    generateSmartBoard();
-
-    document.getElementById("level").innerText = level;
-
-    renderBoard();
-    updateUI();
-
-    timer = setInterval(() => {
-        timeLeft--;
-        updateUI();
-        if (timeLeft <= 0) alert("⏰ Время вышло!");
-    }, 1000);
-}
-
-function generateSmartBoard() {
-
-    let total = gridSize * gridSize;
-    board = [];
-
-    let values = [];
-
-    for (let i = 0; i < total / 2; i++) {
-        let type = i % tileTypes;
-        values.push(type);
-        values.push(type);
+    let pool = [];
+    for(let i=0;i<positions.length/2;i++){
+        let type = i % symbols.length;
+        pool.push(type,type);
     }
 
-    values.sort(() => Math.random() - 0.5);
+    pool.sort(()=>Math.random()-0.5);
 
-    for (let i = 0; i < total; i++) {
-        board.push({ value: values[i], active: true });
-    }
+    tiles = positions.map((pos,i)=>({
+        ...pos,
+        value: pool[i],
+        active:true
+    }));
 }
 
-function isFree(index) {
+function isFree(tile) {
 
-    if (!board[index].active) return false;
+    if(!tile.active) return false;
 
-    let row = Math.floor(index / gridSize);
-    let col = index % gridSize;
+    // проверка сверху
+    let top = tiles.find(t=>t.active && t.z===tile.z+1 && t.x===tile.x && t.y===tile.y);
+    if(top) return false;
 
-    let left = col > 0 ? board[index - 1].active : false;
-    let right = col < gridSize - 1 ? board[index + 1].active : false;
+    // проверка слева/справа
+    let left = tiles.find(t=>t.active && t.z===tile.z && t.x===tile.x-1 && t.y===tile.y);
+    let right = tiles.find(t=>t.active && t.z===tile.z && t.x===tile.x+1 && t.y===tile.y);
 
     return !(left && right);
 }
 
-function renderBoard() {
+function render() {
 
     const game = document.getElementById("game");
-    game.innerHTML = "";
-    game.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+    game.innerHTML="";
 
-    board.forEach((tile, index) => {
+    tiles.forEach((tile,i)=>{
+
+        if(!tile.active) return;
 
         const div = document.createElement("div");
-        div.className = "tile";
+        div.className="tile";
 
-        if (!tile.active) {
-            div.style.visibility = "hidden";
-        } else {
+        div.style.left = tile.x*65 + tile.z*10 + "px";
+        div.style.top = tile.y*85 - tile.z*10 + "px";
+        div.style.zIndex = tile.z*10 + tile.y;
 
-            if (!isFree(index)) {
-                div.classList.add("locked");
-            }
+        div.innerText = symbols[tile.value];
 
-            div.innerText = tilesSet[tile.value];
+        if(isFree(tile)) div.classList.add("free");
 
-            div.onclick = () => selectTile(index, div);
-        }
+        div.onclick = ()=>selectTile(tile,div);
 
         game.appendChild(div);
     });
 }
 
-function selectTile(index, element) {
+function selectTile(tile,element){
 
-    if (!isFree(index)) return;
+    if(!isFree(tile)) return;
 
-    if (!firstTile) {
-        firstTile = index;
+    if(!first){
+        first = tile;
         element.classList.add("selected");
     } else {
 
-        if (firstTile === index) return;
+        if(first===tile) return;
 
-        if (board[firstTile].value === board[index].value) {
+        if(first.value===tile.value){
 
-            let firstEl = document.getElementsByClassName("tile")[firstTile];
-            let secondEl = element;
+            let el1 = [...document.getElementsByClassName("tile")]
+                .find(el=>el.innerText===symbols[first.value]);
 
-            firstEl.classList.add("fade");
-            secondEl.classList.add("fade");
+            element.classList.add("removing");
+            el1.classList.add("removing");
 
-            setTimeout(() => {
-                board[firstTile].active = false;
-                board[index].active = false;
-
-                score += 100 * (combo + 1);
-                combo++;
-
-                firstTile = null;
-
-                renderBoard();
-                updateUI();
-
-                if (checkWin()) {
-                    level++;
-                    setTimeout(initLevel, 1000);
-                }
-
-            }, 400);
+            setTimeout(()=>{
+                first.active=false;
+                tile.active=false;
+                first=null;
+                render();
+            },300);
 
         } else {
-            combo = 0;
-            firstTile = null;
+            first=null;
         }
-
-        updateUI();
     }
 }
 
-function checkWin() {
-    return board.every(t => !t.active);
-}
+generateSolvableBoard();
+render();
 
-function updateUI() {
-    document.getElementById("score").innerText = score;
-    document.getElementById("combo").innerText = combo;
-    document.getElementById("time").innerText = timeLeft;
-}
-
-initLevel();
 </script>
-
 </body>
 </html>
