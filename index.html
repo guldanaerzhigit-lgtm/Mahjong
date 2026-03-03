@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mahjong Blast 2.0</title>
+<title>Mahjong Blast 3.0</title>
 
 <style>
 body {
@@ -13,8 +13,6 @@ body {
     color: white;
     text-align: center;
 }
-
-h1 { margin: 10px 0; }
 
 #topbar {
     display: flex;
@@ -33,50 +31,53 @@ h1 { margin: 10px 0; }
 .tile {
     background: white;
     color: black;
-    font-size: clamp(20px, 5vw, 32px);
+    font-size: clamp(22px, 5vw, 32px);
     border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
     aspect-ratio: 1/1;
     cursor: pointer;
-    transition: 0.2s;
+    transition: 0.3s;
+    transform: scale(1);
+}
+
+.tile.locked {
+    background: #999;
+    cursor: not-allowed;
 }
 
 .tile.selected {
     background: gold;
 }
 
-.tile.hidden {
-    visibility: hidden;
+.tile.fade {
+    animation: fadeOut 0.4s forwards;
 }
 
-button {
-    padding: 8px 14px;
-    margin: 8px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: scale(0);
+    }
 }
 </style>
 </head>
 <body>
 
-<h1>🀄 Mahjong Blast</h1>
+<h1>🀄 Mahjong Blast 3.0</h1>
 
 <div id="topbar">
     <div>Уровень: <span id="level"></span></div>
     <div>Очки: <span id="score"></span></div>
     <div>Комбо: <span id="combo"></span></div>
-    <div>Время: <span id="time"></span> сек</div>
-    <div>⭐ <span id="stars"></span></div>
+    <div>Время: <span id="time"></span></div>
 </div>
 
 <div id="game"></div>
-<button onclick="shuffleBoard()">Перемешать</button>
 
 <script>
-const mahjongTiles = [
+const tilesSet = [
 "🀇","🀈","🀉","🀊","🀋","🀌","🀍",
 "🀙","🀚","🀛","🀜","🀝","🀞","🀟",
 "🀐","🀑","🀒","🀓","🀔","🀕","🀖"
@@ -87,55 +88,45 @@ let gridSize;
 let tileTypes;
 let board = [];
 let firstTile = null;
-
 let score = 0;
 let combo = 0;
 let timeLeft;
-let timerInterval;
-
-function saveProgress() {
-    localStorage.setItem("mahjong_level", level);
-}
-
-function loadProgress() {
-    const saved = localStorage.getItem("mahjong_level");
-    if (saved) level = parseInt(saved);
-}
+let timer;
 
 function initLevel() {
 
-    clearInterval(timerInterval);
+    clearInterval(timer);
 
-    gridSize = 4 + Math.floor(level / 10);
-    if (gridSize % 2 !== 0) gridSize++;
-
-    tileTypes = 4 + Math.floor(level / 15);
+    gridSize = 6;
+    tileTypes = 6 + Math.floor(level / 10);
 
     score = 0;
     combo = 0;
+    timeLeft = 60;
 
-    timeLeft = 30 + level * 2;
+    generateSmartBoard();
 
     document.getElementById("level").innerText = level;
+
+    renderBoard();
     updateUI();
 
-    generateBoard();
-    renderBoard();
-
-    timerInterval = setInterval(() => {
+    timer = setInterval(() => {
         timeLeft--;
         updateUI();
-        if (timeLeft <= 0) loseLevel();
+        if (timeLeft <= 0) alert("⏰ Время вышло!");
     }, 1000);
 }
 
-function generateBoard() {
+function generateSmartBoard() {
+
     let total = gridSize * gridSize;
     board = [];
+
     let values = [];
 
     for (let i = 0; i < total / 2; i++) {
-        let type = Math.floor(Math.random() * tileTypes);
+        let type = i % tileTypes;
         values.push(type);
         values.push(type);
     }
@@ -145,24 +136,44 @@ function generateBoard() {
     for (let i = 0; i < total; i++) {
         board.push({ value: values[i], active: true });
     }
+}
 
-    if (!hasMoves()) shuffleBoard();
+function isFree(index) {
+
+    if (!board[index].active) return false;
+
+    let row = Math.floor(index / gridSize);
+    let col = index % gridSize;
+
+    let left = col > 0 ? board[index - 1].active : false;
+    let right = col < gridSize - 1 ? board[index + 1].active : false;
+
+    return !(left && right);
 }
 
 function renderBoard() {
+
     const game = document.getElementById("game");
     game.innerHTML = "";
     game.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
 
     board.forEach((tile, index) => {
+
         const div = document.createElement("div");
         div.className = "tile";
 
-        if (!tile.active) div.classList.add("hidden");
+        if (!tile.active) {
+            div.style.visibility = "hidden";
+        } else {
 
-        div.innerText = mahjongTiles[tile.value];
+            if (!isFree(index)) {
+                div.classList.add("locked");
+            }
 
-        div.onclick = () => selectTile(index, div);
+            div.innerText = tilesSet[tile.value];
+
+            div.onclick = () => selectTile(index, div);
+        }
 
         game.appendChild(div);
     });
@@ -170,7 +181,7 @@ function renderBoard() {
 
 function selectTile(index, element) {
 
-    if (!board[index].active) return;
+    if (!isFree(index)) return;
 
     if (!firstTile) {
         firstTile = index;
@@ -181,78 +192,42 @@ function selectTile(index, element) {
 
         if (board[firstTile].value === board[index].value) {
 
-            board[firstTile].active = false;
-            board[index].active = false;
+            let firstEl = document.getElementsByClassName("tile")[firstTile];
+            let secondEl = element;
 
-            combo++;
-            score += 100 * combo;
+            firstEl.classList.add("fade");
+            secondEl.classList.add("fade");
+
+            setTimeout(() => {
+                board[firstTile].active = false;
+                board[index].active = false;
+
+                score += 100 * (combo + 1);
+                combo++;
+
+                firstTile = null;
+
+                renderBoard();
+                updateUI();
+
+                if (checkWin()) {
+                    level++;
+                    setTimeout(initLevel, 1000);
+                }
+
+            }, 400);
+
         } else {
             combo = 0;
+            firstTile = null;
         }
 
-        firstTile = null;
-
-        if (!hasMoves()) shuffleBoard();
-        if (checkWin()) winLevel();
-
-        renderBoard();
         updateUI();
     }
 }
 
-function hasMoves() {
-    let active = board.filter(t => t.active);
-    let map = {};
-    for (let t of active) {
-        map[t.value] = (map[t.value] || 0) + 1;
-    }
-    return Object.values(map).some(c => c >= 2);
-}
-
-function shuffleBoard() {
-    let activeValues = board
-        .filter(t => t.active)
-        .map(t => t.value)
-        .sort(() => Math.random() - 0.5);
-
-    let i = 0;
-    for (let t of board) {
-        if (t.active) {
-            t.value = activeValues[i];
-            i++;
-        }
-    }
-    renderBoard();
-}
-
 function checkWin() {
     return board.every(t => !t.active);
-}
-
-function winLevel() {
-    clearInterval(timerInterval);
-
-    let starCount = 1;
-    if (timeLeft > 15) starCount = 3;
-    else if (timeLeft > 5) starCount = 2;
-
-    document.getElementById("stars").innerText = "⭐".repeat(starCount);
-
-    level++;
-    if (level > 100) {
-        alert("🎉 Ты прошёл все 100 уровней!");
-        level = 1;
-    }
-
-    saveProgress();
-
-    setTimeout(initLevel, 2000);
-}
-
-function loseLevel() {
-    clearInterval(timerInterval);
-    alert("⏰ Время вышло!");
-    initLevel();
 }
 
 function updateUI() {
@@ -261,8 +236,8 @@ function updateUI() {
     document.getElementById("time").innerText = timeLeft;
 }
 
-loadProgress();
 initLevel();
 </script>
+
 </body>
 </html>
