@@ -3,185 +3,325 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mahjong 4.0</title>
+<title>Mahjong Solitaire 6.0</title>
 
 <style>
-body {
-    margin:0;
-    background:#0f172a;
-    font-family:Arial;
-    text-align:center;
-    color:white;
+body{
+  margin:0;
+  background:#0f172a;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  overflow:hidden;
 }
-
-#game {
-    position:relative;
-    width:100%;
-    height:80vh;
-    perspective:1200px;
+h1{margin:10px 0}
+#ui{
+  display:flex;
+  justify-content:space-around;
+  flex-wrap:wrap;
+  font-size:14px;
 }
-
-.tile {
-    position:absolute;
-    width:60px;
-    height:80px;
-    background:white;
-    color:black;
-    border-radius:8px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:28px;
-    cursor:pointer;
-    transition: transform .3s, opacity .3s;
-    box-shadow: 0 10px 15px rgba(0,0,0,.4);
+#game{
+  position:relative;
+  width:100%;
+  height:78vh;
+  perspective:1200px;
 }
-
-.tile.free {
-    box-shadow:0 0 15px gold;
+.tile{
+  position:absolute;
+  width:60px;
+  height:80px;
+  background:white;
+  color:black;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+  cursor:pointer;
+  transition:.3s;
+  box-shadow:0 8px 15px rgba(0,0,0,.5);
 }
-
-.tile.selected {
-    transform: scale(1.1);
+.tile.free{box-shadow:0 0 12px gold;}
+.tile.selected{transform:scale(1.1);}
+.tile.remove{
+  transform:translateY(-120px) rotateY(180deg);
+  opacity:0;
 }
-
-.tile.removing {
-    transform: translateY(-100px) rotateY(180deg);
-    opacity:0;
+@media(max-width:600px){
+  .tile{width:45px;height:65px;font-size:22px;}
 }
 </style>
 </head>
 <body>
 
-<h1>🀄 Mahjong Solitaire 4.0</h1>
+<h1>🀄 Mahjong Solitaire 6.0</h1>
+<div id="ui">
+  <div>Уровень: <span id="level"></span></div>
+  <div>Очки: <span id="score"></span></div>
+  <div>Комбо: <span id="combo"></span></div>
+  <div>Время: <span id="time"></span></div>
+</div>
+
 <div id="game"></div>
 
 <script>
-
-const symbols = [
+/* ===============================
+   CONFIG
+================================ */
+const SYMBOLS = [
 "🀇","🀈","🀉","🀊","🀋","🀌","🀍",
 "🀙","🀚","🀛","🀜","🀝","🀞","🀟",
 "🀐","🀑","🀒","🀓","🀔","🀕","🀖"
 ];
 
-const layout = [
- // z0 (нижний слой)
- [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:4,y:0},{x:5,y:0},
-  {x:0,y:1},{x:5,y:1},
-  {x:0,y:2},{x:5,y:2},
-  {x:0,y:3},{x:1,y:3},{x:2,y:3},{x:3,y:3},{x:4,y:3},{x:5,y:3}],
- // z1
- [{x:1,y:1},{x:2,y:1},{x:3,y:1},{x:4,y:1},
-  {x:1,y:2},{x:2,y:2},{x:3,y:2},{x:4,y:2}],
- // z2
- [{x:2,y:1},{x:3,y:1},
-  {x:2,y:2},{x:3,y:2}]
-];
-
+let level = loadProgress();
 let tiles = [];
 let first = null;
+let score = 0;
+let combo = 0;
+let timeLeft = 300;
+let timer;
 
-function generateSolvableBoard() {
+/* ===============================
+   100 LAYOUT GENERATOR
+================================ */
 
-    let positions = [];
+function generateLayout(index){
 
-    layout.forEach((layer,z)=>{
-        layer.forEach(p=>{
-            positions.push({x:p.x,y:p.y,z:z});
-        });
-    });
+  // каждые 10 уровней — новый стиль
+  let size = 12;
+  let layers = 4 + Math.floor(index/20);
 
-    let pool = [];
-    for(let i=0;i<positions.length/2;i++){
-        let type = i % symbols.length;
-        pool.push(type,type);
+  let layout = [];
+
+  for(let z=0;z<layers;z++){
+    let layer=[];
+    let shrink = z*2;
+
+    for(let x=shrink;x<size-shrink;x++){
+      for(let y=shrink;y<8-shrink;y++){
+        if(Math.random() > 0.15)
+          layer.push({x,y});
+      }
     }
-
-    pool.sort(()=>Math.random()-0.5);
-
-    tiles = positions.map((pos,i)=>({
-        ...pos,
-        value: pool[i],
-        active:true
-    }));
+    layout.push(layer);
+  }
+  return layout;
 }
 
-function isFree(tile) {
+/* ===============================
+   SOLVABLE AI GENERATION
+================================ */
 
-    if(!tile.active) return false;
+function generateSolvableBoard(layout){
 
-    // проверка сверху
-    let top = tiles.find(t=>t.active && t.z===tile.z+1 && t.x===tile.x && t.y===tile.y);
-    if(top) return false;
+  let positions=[];
+  layout.forEach((layer,z)=>{
+    layer.forEach(p=>positions.push({x:p.x,y:p.y,z}));
+  });
 
-    // проверка слева/справа
-    let left = tiles.find(t=>t.active && t.z===tile.z && t.x===tile.x-1 && t.y===tile.y);
-    let right = tiles.find(t=>t.active && t.z===tile.z && t.x===tile.x+1 && t.y===tile.y);
+  let pool=[];
+  for(let i=0;i<positions.length/2;i++){
+    let t=i%SYMBOLS.length;
+    pool.push(t,t);
+  }
+  pool.sort(()=>Math.random()-0.5);
 
-    return !(left && right);
+  tiles=positions.map((p,i)=>({...p,value:pool[i],active:true}));
+
+  if(!simulateSolve()) generateSolvableBoard(layout);
 }
 
-function render() {
+function simulateSolve(){
 
-    const game = document.getElementById("game");
-    game.innerHTML="";
+  let copy=JSON.parse(JSON.stringify(tiles));
 
-    tiles.forEach((tile,i)=>{
+  while(true){
+    let freePairs=findFreePairs(copy);
+    if(freePairs.length===0) break;
 
-        if(!tile.active) return;
+    let pair=freePairs[Math.floor(Math.random()*freePairs.length)];
+    copy[pair[0]].active=false;
+    copy[pair[1]].active=false;
+  }
 
-        const div = document.createElement("div");
-        div.className="tile";
+  return copy.every(t=>!t.active);
+}
 
-        div.style.left = tile.x*65 + tile.z*10 + "px";
-        div.style.top = tile.y*85 - tile.z*10 + "px";
-        div.style.zIndex = tile.z*10 + tile.y;
+function findFreePairs(board){
 
-        div.innerText = symbols[tile.value];
-
-        if(isFree(tile)) div.classList.add("free");
-
-        div.onclick = ()=>selectTile(tile,div);
-
-        game.appendChild(div);
+  let pairs=[];
+  board.forEach((a,i)=>{
+    if(!isFree(a,board)) return;
+    board.forEach((b,j)=>{
+      if(i<j && b.active && a.value===b.value && isFree(b,board))
+        pairs.push([i,j]);
     });
+  });
+  return pairs;
 }
 
-function selectTile(tile,element){
+/* ===============================
+   GAME LOGIC
+================================ */
 
-    if(!isFree(tile)) return;
+function isFree(tile,board=tiles){
 
-    if(!first){
-        first = tile;
-        element.classList.add("selected");
-    } else {
+  if(!tile.active) return false;
 
-        if(first===tile) return;
+  let top = board.find(t=>t.active && t.z===tile.z+1 && t.x===tile.x && t.y===tile.y);
+  if(top) return false;
 
-        if(first.value===tile.value){
+  let left = board.find(t=>t.active && t.z===tile.z && t.x===tile.x-1 && t.y===tile.y);
+  let right = board.find(t=>t.active && t.z===tile.z && t.x===tile.x+1 && t.y===tile.y);
 
-            let el1 = [...document.getElementsByClassName("tile")]
-                .find(el=>el.innerText===symbols[first.value]);
+  return !(left && right);
+}
 
-            element.classList.add("removing");
-            el1.classList.add("removing");
+function render(){
 
-            setTimeout(()=>{
-                first.active=false;
-                tile.active=false;
-                first=null;
-                render();
-            },300);
+  const game=document.getElementById("game");
+  game.innerHTML="";
 
-        } else {
-            first=null;
-        }
+  tiles.forEach((tile,i)=>{
+
+    if(!tile.active) return;
+
+    const div=document.createElement("div");
+    div.className="tile";
+    div.style.left=tile.x*50+tile.z*8+"px";
+    div.style.top=tile.y*70-tile.z*8+"px";
+    div.style.zIndex=tile.z*100+tile.y;
+
+    div.innerText=SYMBOLS[tile.value];
+
+    if(isFree(tile)) div.classList.add("free");
+
+    div.onclick=()=>selectTile(tile,div);
+
+    game.appendChild(div);
+  });
+}
+
+function selectTile(tile,el){
+
+  if(!isFree(tile)) return;
+
+  playSound(400);
+
+  if(!first){
+    first=tile;
+    el.classList.add("selected");
+  }else{
+
+    if(first===tile) return;
+
+    if(first.value===tile.value){
+
+      el.classList.add("remove");
+
+      setTimeout(()=>{
+        first.active=false;
+        tile.active=false;
+
+        score+=100*(combo+1);
+        combo++;
+        first=null;
+
+        playSound(800);
+
+        render();
+        updateUI();
+
+        if(tiles.every(t=>!t.active)) winLevel();
+
+      },300);
+
+    }else{
+      combo=0;
+      first=null;
     }
+  }
+  updateUI();
 }
 
-generateSolvableBoard();
-render();
+/* ===============================
+   TIMER + LEVEL
+================================ */
 
+function startTimer(){
+  clearInterval(timer);
+  timer=setInterval(()=>{
+    timeLeft--;
+    updateUI();
+    if(timeLeft<=0) gameOver();
+  },1000);
+}
+
+function winLevel(){
+  level++;
+  saveProgress(level);
+  setTimeout(init,1000);
+}
+
+function gameOver(){
+  alert("⏰ Время вышло!");
+  init();
+}
+
+/* ===============================
+   SOUND (WebAudio)
+================================ */
+
+function playSound(freq){
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const osc=ctx.createOscillator();
+  osc.frequency.value=freq;
+  osc.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime+0.1);
+}
+
+/* ===============================
+   STORAGE
+================================ */
+
+function saveProgress(l){
+  localStorage.setItem("mahjong6",l);
+}
+function loadProgress(){
+  return parseInt(localStorage.getItem("mahjong6")||1);
+}
+
+/* ===============================
+   UI
+================================ */
+
+function updateUI(){
+  document.getElementById("level").innerText=level;
+  document.getElementById("score").innerText=score;
+  document.getElementById("combo").innerText=combo;
+  document.getElementById("time").innerText=timeLeft;
+}
+
+/* ===============================
+   INIT
+================================ */
+
+function init(){
+  score=0;
+  combo=0;
+  timeLeft=300;
+
+  let layout=generateLayout(level%100);
+  generateSolvableBoard(layout);
+  render();
+  updateUI();
+  startTimer();
+}
+
+init();
 </script>
 </body>
 </html>
