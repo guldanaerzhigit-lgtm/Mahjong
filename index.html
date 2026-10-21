@@ -180,7 +180,7 @@ function buildBoard(){
  let pool=[];for(let i=0;i<n/3;i++){let v=(i+Math.floor(data.level/4))%SYMBOLS.length;pool.push(v,v,v);}shuffle(pool);
  tiles=positions.map((p,i)=>({...p,value:pool[i]}));
  // Later levels add a few elevated tiles; their covering relationship is shown in the UI.
- if(data.level>=8){let extra=Math.min(Math.floor(data.level/8),8);for(let i=0;i<extra;i++){let base=tiles[Math.floor(Math.random()*tiles.length)];tiles.push({id:tiles.length,x:base.x,y:base.y,z:1,active:true,value:pool[i%pool.length]});}}
+ if(data.level>=8){let groups=Math.min(Math.floor(data.level/8),8);for(let g=0;g<groups;g++){let v=(g+Math.floor(data.level/3))%SYMBOLS.length;for(let k=0;k<3;k++){let base=tiles[Math.floor(Math.random()*n)];tiles.push({id:tiles.length,x:base.x,y:base.y,z:1,active:true,value:v});}}}
  tray=[];moves=Math.max(18,34-Math.floor(data.level/20));score=0;history=[];busy=false;levelStarted=true;
  $("levelNum").textContent=data.level;$("goal").textContent=Math.floor(n/3)+" наборов";$("moves").textContent=moves;$("score").textContent="0";$("levelProgress").style.width="0%";renderBoard();renderTray();updateHeader();
 }
