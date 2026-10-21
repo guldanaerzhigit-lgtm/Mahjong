@@ -1,327 +1,256 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mahjong Solitaire 6.0</title>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#17142e">
+<meta name="description" content="Tile Bloom — яркая Mahjong Blast головоломка с уровнями, бустерами и ежедневными наградами.">
+<title>Tile Bloom — Mahjong Blast</title>
 <style>
-body{
-  margin:0;
-  background:#0f172a;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-  overflow:hidden;
-}
-h1{margin:10px 0}
-#ui{
-  display:flex;
-  justify-content:space-around;
-  flex-wrap:wrap;
-  font-size:14px;
-}
-#game{
-  position:relative;
-  width:100%;
-  height:78vh;
-  perspective:1200px;
-}
-.tile{
-  position:absolute;
-  width:60px;
-  height:80px;
-  background:white;
-  color:black;
-  border-radius:8px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:28px;
-  cursor:pointer;
-  transition:.3s;
-  box-shadow:0 8px 15px rgba(0,0,0,.5);
-}
-.tile.free{box-shadow:0 0 12px gold;}
-.tile.selected{transform:scale(1.1);}
-.tile.remove{
-  transform:translateY(-120px) rotateY(180deg);
-  opacity:0;
-}
-@media(max-width:600px){
-  .tile{width:45px;height:65px;font-size:22px;}
-}
+:root{--bg:#17142e;--panel:#242044;--panel2:#302951;--cream:#fff7e9;--muted:#bcb6d8;--pink:#ff7aa8;--gold:#ffd36a;--mint:#86efd0;--purple:#a997ff;--shadow:0 12px 30px #08071b66}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--cream);font-family:Inter,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{min-height:100dvh;background:radial-gradient(ellipse at 15% 0%,#49306d 0,transparent 42%),radial-gradient(ellipse at 100% 70%,#24365e 0,transparent 35%),var(--bg)}
+button{font:inherit;border:0;cursor:pointer;color:inherit}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.app{max-width:1060px;margin:auto;padding:14px 16px 34px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 22px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:950;letter-spacing:-.7px;font-size:clamp(20px,4vw,29px)}
+.logo{display:grid;place-items:center;width:43px;height:43px;border-radius:15px;background:linear-gradient(145deg,#ff9bc0,#ffcb6d);box-shadow:0 6px 18px #ff7aa833;font-size:24px}
+.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:2px;font-weight:800;margin-top:1px}
+.wallet{display:flex;gap:8px;align-items:center}
+.pill{display:flex;align-items:center;gap:6px;padding:9px 12px;border-radius:14px;background:#ffffff0e;border:1px solid #ffffff12;font-size:14px;font-weight:850}
+.iconbtn{width:41px;height:41px;border-radius:14px;background:#ffffff12;border:1px solid #ffffff14;font-size:18px}
+.hero{position:relative;overflow:hidden;border-radius:27px;padding:25px;background:linear-gradient(120deg,#f778a5,#d77bd2 52%,#8c83ff);box-shadow:var(--shadow);color:#25183f;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.hero:after{content:"";position:absolute;width:210px;height:210px;border:28px solid #ffffff22;border-radius:50%;right:50px;top:-100px}
+.eyebrow{font-size:11px;font-weight:950;letter-spacing:2px;text-transform:uppercase;opacity:.75}
+.hero h1{font-size:clamp(27px,5vw,43px);line-height:1.02;letter-spacing:-1.8px;margin:8px 0}
+.hero p{margin:0 0 17px;max-width:440px;font-size:14px;line-height:1.5;font-weight:650;opacity:.8}
+.primary{background:#251b46;color:white;border-radius:15px;padding:13px 18px;font-weight:900;box-shadow:0 7px 0 #17112d33;transition:transform .15s}
+.primary:active,.soft:active,.tile:active{transform:scale(.97)}
+.hero-art{position:relative;z-index:1;font-size:clamp(56px,10vw,90px);filter:drop-shadow(0 12px 8px #56305333);padding:0 8px;animation:float 3s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-7px) rotate(3deg)}}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:25px 2px 12px}
+.section-head h2{font-size:18px;margin:0;letter-spacing:-.4px}
+.section-head span{color:var(--muted);font-size:12px;font-weight:750}
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.feature{border-radius:20px;padding:16px;background:#ffffff0b;border:1px solid #ffffff12;min-height:115px;cursor:pointer;text-align:left;transition:.2s}
+.feature:hover{background:#ffffff14;transform:translateY(-2px)}
+.feature .emoji{font-size:26px;display:block;margin-bottom:10px}
+.feature b{display:block;font-size:14px}
+.feature small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.panel{background:#211e3c;border:1px solid #ffffff12;border-radius:24px;padding:17px;box-shadow:var(--shadow)}
+.screen{display:none}.screen.active{display:block}
+.game-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}
+.back{background:#ffffff12;border-radius:12px;padding:10px 13px;font-weight:850}
+.level-label{font-size:13px;color:var(--muted);font-weight:800}
+.level-label strong{color:var(--cream);font-size:18px;margin-left:4px}
+.progress{height:7px;background:#ffffff13;border-radius:99px;overflow:hidden;margin:10px 0 15px}
+.progress>div{height:100%;width:0;background:linear-gradient(90deg,var(--pink),var(--gold));border-radius:99px;transition:width .3s}
+.game-stats{display:flex;justify-content:space-between;gap:7px;margin-bottom:13px}
+.stat{background:#ffffff09;border-radius:13px;padding:9px 12px;min-width:0;flex:1;text-align:center}
+.stat span{display:block;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase}
+.stat b{font-size:17px}
+.board-wrap{position:relative;background:linear-gradient(145deg,#34305b,#201d3d);border:1px solid #ffffff12;border-radius:22px;padding:15px 10px 13px;overflow:hidden}
+.board-wrap:before{content:"";position:absolute;inset:0;opacity:.22;background-image:radial-gradient(#b8a9ff 1px,transparent 1px);background-size:18px 18px;pointer-events:none}
+.board{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;max-width:640px;margin:auto;min-height:225px;align-content:center}
+.tile{position:relative;aspect-ratio:.82;min-width:0;border-radius:12px;background:linear-gradient(145deg,#fff9ee,#f1dfc7);color:#39264d;border:1px solid #fff;box-shadow:0 4px 0 #b6a1c5,0 6px 10px #0e0b2766;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:clamp(19px,4.2vw,32px);line-height:1;transition:transform .16s,opacity .16s;user-select:none;position:relative}
+.tile .tiny{font-size:9px;font-weight:950;letter-spacing:.5px;margin-top:3px;color:#7a648b}
+.tile:disabled{cursor:default}
+.tile.covered{filter:brightness(.63);transform:translateY(2px);box-shadow:0 2px 0 #8c789f}
+.tile.hint{outline:3px solid var(--gold);outline-offset:1px;animation:pulse .7s ease-in-out 2}
+.tile.selected{outline:3px solid var(--mint);outline-offset:1px;transform:translateY(-4px)}
+.tile.gone{visibility:hidden;pointer-events:none}
+@keyframes pulse{50%{filter:brightness(1.25);transform:translateY(-4px)}}
+.tray-label{display:flex;justify-content:space-between;align-items:center;margin:15px 2px 8px;font-size:12px;color:var(--muted);font-weight:800}
+.tray{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;min-height:58px;padding:7px;border-radius:15px;background:#0e0c2399;border:1px solid #ffffff0d}
+.slot{aspect-ratio:.85;max-height:48px;border:1px dashed #ffffff24;border-radius:9px;display:grid;place-items:center;font-size:21px;color:#ffffff30}
+.slot.filled{border:1px solid #ffffff14;background:#fff8e9;color:#372349;box-shadow:0 3px 0 #b6a1c5}
+.game-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:13px}
+.soft{padding:12px 6px;border-radius:14px;background:#ffffff10;border:1px solid #ffffff12;font-size:12px;font-weight:850}
+.soft em{font-style:normal;font-size:18px;display:block;margin-bottom:4px}
+.soft:disabled{opacity:.35;cursor:not-allowed}
+.note{text-align:center;color:var(--muted);font-size:11px;line-height:1.5;margin:12px 0 0}
+.map-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.level-card{padding:13px 4px;border-radius:15px;background:#ffffff0b;border:1px solid #ffffff10;text-align:center;font-weight:900}
+.level-card span{display:block;font-size:10px;color:var(--muted);margin-top:5px}
+.level-card.open{background:linear-gradient(145deg,#41335f,#2d274e);border-color:#8170bd}
+.level-card.current{background:linear-gradient(145deg,#ffb1ca,#ffd88c);color:#352044;box-shadow:0 4px 0 #a85e93}
+.level-card.locked{opacity:.42}
+.map-scroll{max-height:65dvh;overflow:auto;padding:2px 3px 10px}
+.modal-back{position:fixed;inset:0;background:#090719bd;display:none;place-items:center;padding:20px;z-index:20}
+.modal-back.show{display:grid}
+.modal{width:min(420px,100%);border-radius:25px;background:#292447;border:1px solid #ffffff20;padding:25px;text-align:center;box-shadow:0 24px 80px #0008}
+.modal .big{font-size:55px}.modal h2{margin:8px 0}.modal p{color:var(--muted);font-size:14px;line-height:1.5}
+.modal-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:17px}
+.toast{position:fixed;left:50%;bottom:25px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:30;background:#fff7e9;color:#2c2147;padding:12px 18px;border-radius:14px;font-weight:900;font-size:13px;box-shadow:var(--shadow);transition:.25s;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.footer{text-align:center;color:#80799e;font-size:11px;padding:24px 0 0}
+@media(min-width:700px){.app{padding:20px 24px 45px}.hero{padding:35px 40px}.feature{padding:20px}.board{gap:10px;padding:5px 20px}.tile{border-radius:14px}.panel{padding:23px}.game-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:15px;align-items:start}.board-wrap{grid-row:span 2}.side-panel{display:flex;flex-direction:column}.tray{margin-top:4px}.game-actions{grid-template-columns:1fr}.soft{display:flex;align-items:center;gap:10px;text-align:left;padding:11px 13px}.soft em{margin:0;font-size:21px}.soft span{display:block}.soft small{display:block;color:var(--muted);font-size:10px;margin-top:2px}}
+@media(max-width:430px){.app{padding:10px 10px 25px}.topbar{margin-bottom:14px}.wallet{gap:5px}.pill{padding:8px;font-size:12px}.iconbtn{width:36px;height:36px}.hero{padding:19px;border-radius:22px}.hero-art{padding:0}.feature-grid{gap:7px}.feature{padding:12px 10px;min-height:105px}.feature b{font-size:12px}.feature small{font-size:10px}.panel{padding:11px;border-radius:20px}.board{gap:5px}.tile{border-radius:9px}.tile .tiny{font-size:7px}.game-actions{gap:5px}.soft{font-size:10px;padding:10px 2px}.tray{gap:4px}.slot{font-size:18px}}
 </style>
 </head>
 <body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="logo">🀄</div><div>TILE BLOOM<small>MAHJONG BLAST</small></div></div>
+  <div class="wallet"><div class="pill">🪙 <b id="coins">120</b></div><div class="pill">❤️ <b id="lives">5</b></div><button class="iconbtn" id="settingsBtn" aria-label="Настройки">⚙️</button></div>
+</header>
 
-<h1>🀄 Mahjong Solitaire 6.0</h1>
-<div id="ui">
-  <div>Уровень: <span id="level"></span></div>
-  <div>Очки: <span id="score"></span></div>
-  <div>Комбо: <span id="combo"></span></div>
-  <div>Время: <span id="time"></span></div>
+<section id="home" class="screen active">
+  <div class="hero">
+    <div><div class="eyebrow">✨ ТВОЯ МИНУТКА СПОКОЙСТВИЯ</div><h1>Собирай. Сочетай.<br>Расцветай!</h1><p>Убирай плитки по три, открывай новые уровни и собирай коллекцию наград.</p><button class="primary" id="playBtn">Играть сейчас&nbsp; →</button></div>
+    <div class="hero-art" aria-hidden="true">🌸<br>🀄</div>
+  </div>
+  <div class="section-head"><h2>Твой прогресс</h2><span id="progressText">Уровень 1 из 500</span></div>
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div style="font-weight:900;font-size:17px">Сад головоломок</div><div style="font-size:12px;color:var(--muted);margin-top:5px">Каждый уровень — новое испытание</div></div><div style="font-size:35px">🌷</div></div>
+    <div class="progress"><div id="homeProgress"></div></div>
+    <button class="soft" style="width:100%" id="mapBtn">🗺️ &nbsp;Открыть карту уровней <span style="float:right">→</span></button>
+  </div>
+  <div class="section-head"><h2>Бонусы и открытия</h2><span>Каждый день</span></div>
+  <div class="feature-grid">
+    <button class="feature" id="dailyBtn"><span class="emoji">🎁</span><b>Ежедневный подарок</b><small id="dailyStatus">Забери свои монеты</small></button>
+    <button class="feature" id="collectionBtn"><span class="emoji">🪷</span><b>Коллекция</b><small>Собирай красивые символы</small></button>
+    <button class="feature" id="helpBtn"><span class="emoji">💡</span><b>Как играть</b><small>Правила за 30 секунд</small></button>
+  </div>
+</section>
+
+<section id="gameScreen" class="screen">
+  <div class="game-head"><button class="back" id="homeBtn">← Меню</button><div class="level-label">УРОВЕНЬ <strong id="levelNum">1</strong></div><button class="back" id="restartBtn">↻</button></div>
+  <div class="progress"><div id="levelProgress"></div></div>
+  <div class="game-stats">
+    <div class="stat"><span>Очки</span><b id="score">0</b></div><div class="stat"><span>Цель</span><b id="goal">12 наборов</b></div><div class="stat"><span>Ходы</span><b id="moves">30</b></div>
+  </div>
+  <div class="game-layout">
+    <div class="board-wrap"><div class="board" id="board" aria-label="Игровое поле"></div><p class="note" id="boardNote">Нажимай на доступные плитки. Собери три одинаковых!</p></div>
+    <div class="side-panel">
+      <div class="tray-label"><span>🧺 ТВОЙ ЛОТОК</span><span id="trayCount">0 / 7</span></div>
+      <div class="tray" id="tray"></div>
+      <div class="game-actions">
+        <button class="soft" id="hintBtn"><em>💡</em><span>Подсказка<small>🪙 15 монет</small></span></button>
+        <button class="soft" id="shuffleBtn"><em>🔀</em><span>Перемешать<small>🪙 25 монет</small></span></button>
+        <button class="soft" id="undoBtn"><em>↩️</em><span>Отменить ход<small>🪙 10 монет</small></span></button>
+      </div>
+      <p class="note">Три одинаковые плитки исчезнут автоматически. Не заполняй лоток — иначе уровень закончится!</p>
+    </div>
+  </div>
+</section>
+
+<section id="mapScreen" class="screen">
+  <div class="game-head"><button class="back" id="mapHomeBtn">← Меню</button><div class="level-label">КАРТА <strong>🌸</strong></div><span class="pill">⭐ <b id="stars">0</b></span></div>
+  <div class="panel"><div class="section-head" style="margin-top:0"><h2>Путешествие по саду</h2><span>500 уровней</span></div><div class="map-scroll"><div class="map-grid" id="mapGrid"></div></div></div>
+</section>
+<div class="footer">TILE BLOOM · Маленькие победы каждый день ✨</div>
 </div>
 
-<div id="game"></div>
+<div class="modal-back" id="modalBack" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal"><div class="big" id="modalIcon">🌸</div><h2 id="modalTitle">Готово!</h2><p id="modalText"></p><div class="modal-actions" id="modalActions"></div></div></div>
+<div class="toast" id="toast"></div>
 
 <script>
-/* ===============================
-   CONFIG
-================================ */
-const SYMBOLS = [
-"🀇","🀈","🀉","🀊","🀋","🀌","🀍",
-"🀙","🀚","🀛","🀜","🀝","🀞","🀟",
-"🀐","🀑","🀒","🀓","🀔","🀕","🀖"
-];
-
-let level = loadProgress();
-let tiles = [];
-let first = null;
-let score = 0;
-let combo = 0;
-let timeLeft = 300;
-let timer;
-
-/* ===============================
-   100 LAYOUT GENERATOR
-================================ */
-
-function generateLayout(index){
-
-  // каждые 10 уровней — новый стиль
-  let size = 12;
-  let layers = 4 + Math.floor(index/20);
-
-  let layout = [];
-
-  for(let z=0;z<layers;z++){
-    let layer=[];
-    let shrink = z*2;
-
-    for(let x=shrink;x<size-shrink;x++){
-      for(let y=shrink;y<8-shrink;y++){
-        if(Math.random() > 0.15)
-          layer.push({x,y});
-      }
-    }
-    layout.push(layer);
-  }
-  return layout;
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const SYMBOLS=["🌸","🍀","🪷","🦋","🍓","🍋","🍇","🐚","🌙","⭐","🍑","💎","🍉","🐞","🌼","🍒","🪻","🐝"];
+const SAVE_KEY="tileBloomSaveV1";
+const fresh=()=>({level:1,coins:120,lives:5,stars:0,score:0,claimedDay:"",collection:[],lastLife:Date.now()});
+let data=load(),tiles=[],tray=[],moves=30,score=0,firstHint=null,history=[],busy=false,levelStarted=false,toastTimer;
+function load(){try{return Object.assign(fresh(),JSON.parse(localStorage.getItem(SAVE_KEY)||"{}"));}catch(e){return fresh();}}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){} updateHeader();}
+function updateHeader(){
+$("coins").textContent=data.coins;$("lives").textContent=data.lives;$("stars").textContent=data.stars;
+$("progressText").textContent="Уровень "+data.level+" из 500";
+$("homeProgress").style.width=((data.level-1)/499*100)+"%";
+$("dailyStatus").textContent=data.claimedDay===today()?"Уже получено ✓":"Забери свои монеты";
+$("hintBtn").disabled=data.coins<15;$("shuffleBtn").disabled=data.coins<25;$("undoBtn").disabled=data.coins<10||history.length===0;
 }
-
-/* ===============================
-   SOLVABLE AI GENERATION
-================================ */
-
-function generateSolvableBoard(layout){
-
-  let positions=[];
-  layout.forEach((layer,z)=>{
-    layer.forEach(p=>positions.push({x:p.x,y:p.y,z}));
-  });
-
-  let pool=[];
-  for(let i=0;i<positions.length/2;i++){
-    let t=i%SYMBOLS.length;
-    pool.push(t,t);
-  }
-  pool.sort(()=>Math.random()-0.5);
-
-  tiles=positions.map((p,i)=>({...p,value:pool[i],active:true}));
-
-  if(!simulateSolve()) generateSolvableBoard(layout);
+function today(){return new Date().toLocaleDateString("en-CA");}
+function toast(s){const t=$("toast");t.textContent=s;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2100);}
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$(id).classList.add("active");window.scrollTo(0,0);}
+function modal(icon,title,text,buttons){$("modalIcon").textContent=icon;$("modalTitle").textContent=title;$("modalText").textContent=text;const a=$("modalActions");a.innerHTML="";buttons.forEach(b=>{const x=document.createElement("button");x.className=b.primary?"primary":"back";x.textContent=b.text;x.onclick=()=>{closeModal();b.action&&b.action();};a.appendChild(x);});$("modalBack").classList.add("show");}
+function closeModal(){$("modalBack").classList.remove("show");}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function buildBoard(){
+ const count=Math.min(36+Math.floor((data.level-1)/3)*3,63);let n=Math.ceil(count/3)*3;
+ const positions=[];
+ // A compact flower-like board. Higher levels add more tiles and a second visual layer.
+ const cols=7, rows=Math.ceil(n/cols);
+ for(let i=0;i<n;i++){let row=Math.floor(i/cols),col=i%cols;positions.push({id:i,x:col,y:row,z:0,active:true,value:0});}
+ // The tile pool contains complete triples, so the board is always matchable.
+ let pool=[];for(let i=0;i<n/3;i++){let v=(i+Math.floor(data.level/4))%SYMBOLS.length;pool.push(v,v,v);}shuffle(pool);
+ tiles=positions.map((p,i)=>({...p,value:pool[i]}));
+ // Later levels add a few elevated tiles; their covering relationship is shown in the UI.
+ if(data.level>=8){let extra=Math.min(Math.floor(data.level/8),8);for(let i=0;i<extra;i++){let base=tiles[Math.floor(Math.random()*tiles.length)];tiles.push({id:tiles.length,x:base.x,y:base.y,z:1,active:true,value:pool[i%pool.length]});}}
+ tray=[];moves=Math.max(18,34-Math.floor(data.level/20));score=0;history=[];busy=false;levelStarted=true;
+ $("levelNum").textContent=data.level;$("goal").textContent=Math.floor(n/3)+" наборов";$("moves").textContent=moves;$("score").textContent="0";$("levelProgress").style.width="0%";renderBoard();renderTray();updateHeader();
 }
-
-function simulateSolve(){
-
-  let copy=JSON.parse(JSON.stringify(tiles));
-
-  while(true){
-    let freePairs=findFreePairs(copy);
-    if(freePairs.length===0) break;
-
-    let pair=freePairs[Math.floor(Math.random()*freePairs.length)];
-    copy[pair[0]].active=false;
-    copy[pair[1]].active=false;
-  }
-
-  return copy.every(t=>!t.active);
+function covered(t){return tiles.some(o=>o.active&&o.z>t.z&&o.x===t.x&&o.y===t.y);}
+function renderBoard(){
+ const board=$("board");board.innerHTML="";
+ // Sort low tiles first so elevated tiles render on top.
+ tiles.filter(t=>t.active).sort((a,b)=>a.z-b.z).forEach(t=>{
+  const b=document.createElement("button");b.className="tile";b.type="button";b.dataset.id=t.id;b.setAttribute("aria-label","Плитка "+SYMBOLS[t.value]);
+  b.innerHTML="<span>"+SYMBOLS[t.value]+"</span><span class='tiny'>"+(["BLOOM","ZEN","LUCKY"][t.value%3])+"</span>";
+  if(covered(t)){b.classList.add("covered");b.disabled=true;}
+  if(firstHint===t.id)b.classList.add("hint");
+  b.addEventListener("click",()=>pick(t.id));board.appendChild(b);
+ });
+ if(!board.children.length){board.innerHTML="<div style='grid-column:1/-1;text-align:center;padding:55px 5px;color:var(--muted)'>Поле очищено 🌸</div>";}
 }
-
-function findFreePairs(board){
-
-  let pairs=[];
-  board.forEach((a,i)=>{
-    if(!isFree(a,board)) return;
-    board.forEach((b,j)=>{
-      if(i<j && b.active && a.value===b.value && isFree(b,board))
-        pairs.push([i,j]);
-    });
-  });
-  return pairs;
+function renderTray(){
+ const el=$("tray");el.innerHTML="";
+ for(let i=0;i<7;i++){const s=document.createElement("div");s.className="slot"+(tray[i]!==undefined?" filled":"");s.textContent=tray[i]===undefined?"·":SYMBOLS[tray[i]];el.appendChild(s);}
+ $("trayCount").textContent=tray.length+" / 7";updateHeader();
 }
-
-/* ===============================
-   GAME LOGIC
-================================ */
-
-function isFree(tile,board=tiles){
-
-  if(!tile.active) return false;
-
-  let top = board.find(t=>t.active && t.z===tile.z+1 && t.x===tile.x && t.y===tile.y);
-  if(top) return false;
-
-  let left = board.find(t=>t.active && t.z===tile.z && t.x===tile.x-1 && t.y===tile.y);
-  let right = board.find(t=>t.active && t.z===tile.z && t.x===tile.x+1 && t.y===tile.y);
-
-  return !(left && right);
+function pick(id){
+ if(busy)return;const t=tiles.find(x=>x.id===id);if(!t||!t.active||covered(t))return;
+ history.push({id:t.id,value:t.value,active:true,oldTray:tray.slice(),oldMoves:moves,oldScore:score});if(history.length>12)history.shift();
+ t.active=false;tray.push(t.value);moves--;firstHint=null;
+ const count=tray.filter(v=>v===t.value).length;
+ if(count>=3){let remove=0;for(let i=tray.length-1;i>=0&&remove<3;i--){if(tray[i]===t.value){tray.splice(i,1);remove++;}}score+=100;data.coins+=3;data.score+=100;data.collection=Array.from(new Set(data.collection.concat([t.value])));toast("+3 монеты · Тройка!");}
+ $("score").textContent=score;$("moves").textContent=moves;$("levelProgress").style.width=Math.min(100,score/Math.max(1,Math.floor(tiles.length/3)*100)*100)+"%";
+ renderBoard();renderTray();
+ if(tiles.every(x=>!x.active)){setTimeout(winLevel,250);return;}
+ if(tray.length>=7){setTimeout(()=>endLevel(false,"Лоток заполнен! Попробуй ещё раз."),180);return;}
+ if(moves<=0){setTimeout(()=>endLevel(false,"Ходы закончились. Попробуй другую тактику!"),180);return;}
 }
-
-function render(){
-
-  const game=document.getElementById("game");
-  game.innerHTML="";
-
-  tiles.forEach((tile,i)=>{
-
-    if(!tile.active) return;
-
-    const div=document.createElement("div");
-    div.className="tile";
-    div.style.left=tile.x*50+tile.z*8+"px";
-    div.style.top=tile.y*70-tile.z*8+"px";
-    div.style.zIndex=tile.z*100+tile.y;
-
-    div.innerText=SYMBOLS[tile.value];
-
-    if(isFree(tile)) div.classList.add("free");
-
-    div.onclick=()=>selectTile(tile,div);
-
-    game.appendChild(div);
-  });
-}
-
-function selectTile(tile,el){
-
-  if(!isFree(tile)) return;
-
-  playSound(400);
-
-  if(!first){
-    first=tile;
-    el.classList.add("selected");
-  }else{
-
-    if(first===tile) return;
-
-    if(first.value===tile.value){
-
-      el.classList.add("remove");
-
-      setTimeout(()=>{
-        first.active=false;
-        tile.active=false;
-
-        score+=100*(combo+1);
-        combo++;
-        first=null;
-
-        playSound(800);
-
-        render();
-        updateUI();
-
-        if(tiles.every(t=>!t.active)) winLevel();
-
-      },300);
-
-    }else{
-      combo=0;
-      first=null;
-    }
-  }
-  updateUI();
-}
-
-/* ===============================
-   TIMER + LEVEL
-================================ */
-
-function startTimer(){
-  clearInterval(timer);
-  timer=setInterval(()=>{
-    timeLeft--;
-    updateUI();
-    if(timeLeft<=0) gameOver();
-  },1000);
-}
-
 function winLevel(){
-  level++;
-  saveProgress(level);
-  setTimeout(init,1000);
+ busy=true;const earned=10+Math.min(20,Math.floor(data.level/10));data.coins+=earned;data.stars+=3;const completed=data.level;data.level=Math.min(500,data.level+1);save();updateHeader();
+ modal("🏆","Уровень пройден!", "Ты собрала все плитки! Награда: +"+earned+" монет и ⭐⭐⭐",[{text:"На карту",action:()=>{showMap();}},{text:data.level>=500?"Играть снова":"Следующий уровень →",primary:true,action:()=>{if(completed>=500)data.level=500;save();showScreen("gameScreen");buildBoard();}}]);
 }
-
-function gameOver(){
-  alert("⏰ Время вышло!");
-  init();
+function endLevel(won,msg){busy=true;if(!won&&data.lives>0)data.lives--;save();modal(won?"🎉":"💗",won?"Прекрасно!":"Попробуем ещё?",msg, [{text:"В меню",action:()=>showScreen("home")},{text:"Заново",primary:true,action:()=>{if(data.lives>0)buildBoard();else showNoLives();}}]);}
+function showNoLives(){modal("❤️","Нужен отдых","Жизни восстановятся со временем. Пока можно забрать ежедневный подарок или вернуться позже.",[{text:"Понятно",primary:true,action:()=>showScreen("home")}]);}
+function startGame(){if(data.lives<=0){showNoLives();return;}showScreen("gameScreen");buildBoard();}
+function showMap(){showScreen("mapScreen");const g=$("mapGrid");g.innerHTML="";for(let i=1;i<=500;i++){const b=document.createElement("button");b.className="level-card "+(i<data.level?"open":i===data.level?"current":"locked");b.innerHTML=(i<data.level?"✓":i===data.level?"🌸":"🔒")+"<span>"+i+"</span>";if(i<=data.level){b.onclick=()=>{data.level=i;save();startGame();};}g.appendChild(b);}}
+function spend(cost){if(data.coins<cost){toast("Не хватает монет 🪙");return false;}data.coins-=cost;save();return true;}
+function hint(){
+ if(!spend(15))return;
+ const active=tiles.filter(t=>t.active&&!covered(t));if(!active.length){toast("Нет доступных плиток");return;}
+ let target=null;for(const t of active){if(tray.includes(t.value)||active.some(o=>o.id!==t.id&&o.value===t.value)){target=t;break;}}
+ target=target||active[0];firstHint=target.id;renderBoard();setTimeout(()=>{firstHint=null;renderBoard();},1700);
+ const el=$("board").querySelector('[data-id="'+target.id+'"]');if(el)el.scrollIntoView({behavior:"smooth",block:"nearest"});toast("Попробуй эту плитку 💡");
 }
-
-/* ===============================
-   SOUND (WebAudio)
-================================ */
-
-function playSound(freq){
-  const ctx=new (window.AudioContext||window.webkitAudioContext)();
-  const osc=ctx.createOscillator();
-  osc.frequency.value=freq;
-  osc.connect(ctx.destination);
-  osc.start();
-  osc.stop(ctx.currentTime+0.1);
+function mix(){
+ if(!spend(25))return;
+ const active=tiles.filter(t=>t.active),pool=shuffle(active.map(t=>t.value));active.forEach((t,i)=>t.value=pool[i]);firstHint=null;renderBoard();toast("Плитки перемешаны 🔀");
 }
-
-/* ===============================
-   STORAGE
-================================ */
-
-function saveProgress(l){
-  localStorage.setItem("mahjong6",l);
+function undo(){
+ if(!history.length){toast("Пока нечего отменять");return;}if(!spend(10))return;
+ const h=history.pop(),t=tiles.find(x=>x.id===h.id);if(t)t.active=true;
+ tray=h.oldTray; moves=h.oldMoves;score=h.oldScore;busy=false;$("score").textContent=score;$("moves").textContent=moves;renderBoard();renderTray();toast("Последний ход отменён");
 }
-function loadProgress(){
-  return parseInt(localStorage.getItem("mahjong6")||1);
+function claimDaily(){
+ if(data.claimedDay===today()){toast("Подарок уже получен. Возвращайся завтра!");return;}
+ data.claimedDay=today();data.coins+=50;data.lives=Math.min(5,data.lives+1);save();modal("🎁","Ежедневный подарок!","Ты получила 50 монет и одну жизнь. Заглядывай каждый день за новым бонусом!",[{text:"Ура!",primary:true}]);
 }
-
-/* ===============================
-   UI
-================================ */
-
-function updateUI(){
-  document.getElementById("level").innerText=level;
-  document.getElementById("score").innerText=score;
-  document.getElementById("combo").innerText=combo;
-  document.getElementById("time").innerText=timeLeft;
-}
-
-/* ===============================
-   INIT
-================================ */
-
-function init(){
-  score=0;
-  combo=0;
-  timeLeft=300;
-
-  let layout=generateLayout(level%100);
-  generateSolvableBoard(layout);
-  render();
-  updateUI();
-  startTimer();
-}
-
-init();
+function help(){modal("🧩","Как играть","1. Нажимай на доступные плитки. 2. Собери три одинаковых символа — они исчезнут. 3. Используй подсказку, перемешивание и отмену хода. 4. Не заполняй лоток из семи ячеек!",[{text:"Понятно",primary:true}]);}
+function settings(){modal("⚙️","Настройки","Прогресс и монеты сохраняются на этом устройстве. Сброс удалит все локальные данные игры.",[{text:"Закрыть"},{text:"Сбросить игру",primary:true,action:()=>modal("🧹","Сбросить прогресс?","Все уровни, монеты и награды будут удалены.",[{text:"Отмена"},{text:"Да, сбросить",primary:true,action:()=>{data=fresh();save();showScreen("home");updateHeader();toast("Прогресс сброшен");}}])}]);}
+function collection(){const names=data.collection.map(i=>SYMBOLS[i]).join("  ");modal("🪷","Твоя коллекция",data.collection.length?("Открыто символов: "+data.collection.length+" из "+SYMBOLS.length+"\n"+names):"Пока пусто. Собирай тройки плиток, чтобы открывать символы!",[{text:"Продолжить",primary:true}]);}
+$("playBtn").onclick=startGame;$("mapBtn").onclick=showMap;$("mapHomeBtn").onclick=()=>showScreen("home");$("homeBtn").onclick=()=>{save();showScreen("home");};$("restartBtn").onclick=()=>modal("↻","Начать уровень заново?","Текущая раскладка начнётся сначала.",[{text:"Отмена"},{text:"Перезапустить",primary:true,action:()=>buildBoard()}]);
+$("dailyBtn").onclick=claimDaily;$("helpBtn").onclick=help;$("settingsBtn").onclick=settings;$("collectionBtn").onclick=collection;$("hintBtn").onclick=hint;$("shuffleBtn").onclick=mix;$("undoBtn").onclick=undo;
+$("modalBack").addEventListener("click",e=>{if(e.target===$("modalBack"))closeModal();});
+updateHeader();
+})();
 </script>
 </body>
 </html>
