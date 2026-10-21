@@ -42,7 +42,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;ma
 .tools h2{font-size:14px;margin:0}
 .tools span{font-size:11px;color:var(--muted)}
 .pieces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.piece-card{min-width:0;min-height:107px;border-radius:17px;background:#ffffff08;border:1px solid #ffffff12;display:grid;place-items:center;padding:9px;transition:.15s}
+.piece-card{min-width:0;min-height:107px;border-radius:17px;background:#ffffff08;border:1px solid #ffffff12;display:grid;place-items:center;padding:9px;transition:.15s;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}.piece-card.dragging-source{opacity:.35}.drag-ghost{position:fixed;z-index:50;pointer-events:none;opacity:.95;filter:drop-shadow(0 12px 18px #0008);transform:translate(-50%,-50%) scale(1.08)}.drag-ghost .mini-cell{width:clamp(18px,5vw,25px);height:clamp(18px,5vw,25px)}
 .piece-card.selected{background:#71e8c116;border-color:var(--mint);box-shadow:0 0 0 2px #71e8c126}
 .piece-card.used{opacity:.25;pointer-events:none}
 .piece-card:disabled{cursor:default}
@@ -99,7 +99,7 @@ const SHAPES=[
 [[1,1,1],[1,0,0],[1,0,0]],[[1,1,1],[0,0,1],[0,0,1]],[[1,1,1],[0,1,0],[0,1,0]],
 [[1,1,1],[1,1,0]],[[1,1],[1,1],[1,0]],[[1,1,1],[0,1,1]]
 ];
-let grid,score=0,lines=0,best=readBest(),pieces=[],selected=-1,sound=false,over=false,toastTimer,previewCells=[];
+let grid,score=0,lines=0,best=readBest(),pieces=[],selected=-1,sound=false,over=false,toastTimer,previewCells=[];\nlet dragState=null,dragMoved=false,dragGhost=null,dragRaf=0;
 function readBest(){try{return Number(localStorage.getItem("blockBloomBest")||0)||0}catch(e){return 0}}
 function saveBest(){try{localStorage.setItem("blockBloomBest",String(best))}catch(e){}}
 function newPiece(){const shape=SHAPES[Math.floor(Math.random()*SHAPES.length)].map(r=>r.slice());return{shape,color:COLORS[Math.floor(Math.random()*COLORS.length)],used:false}}
@@ -110,9 +110,9 @@ function modal(icon,title,text,buttons){$("modalIcon").textContent=icon;$("modal
 function renderBoard(){
  const board=$("board");board.innerHTML="";
  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
-  const b=document.createElement("button");b.type="button";b.className="cell";b.setAttribute("role","gridcell");b.setAttribute("aria-label","Ряд "+(y+1)+", столбец "+(x+1)+(grid[y][x]?", занято":" , свободно"));
+  const b=document.createElement("button");b.type="button";b.className="cell";b.dataset.x=x;b.dataset.y=y;b.setAttribute("role","gridcell");b.setAttribute("aria-label","Ряд "+(y+1)+", столбец "+(x+1)+(grid[y][x]?", занято":" , свободно"));
   if(grid[y][x]){b.classList.add("filled");b.style.setProperty("--c",grid[y][x])}
-  if(previewCells.some(p=>p.x===x&&p.y===y)){b.classList.add(canPlace(pieces[selected]?.shape,x,y)?"preview":"bad-preview")}
+  if(previewCells.some(p=>p.x===x&&p.y===y)){const valid=dragState&&dragState.active?dragState.target&&dragState.target.valid:canPlace(pieces[selected]?.shape,previewCells[0]?.x,previewCells[0]?.y);b.classList.add(valid?"preview":"bad-preview")}
   b.addEventListener("click",()=>placeAt(x,y));board.appendChild(b);
  }
 }
@@ -122,9 +122,66 @@ function renderPieces(){
   const b=document.createElement("button");b.type="button";b.className="piece-card"+(i===selected?" selected":"")+(p.used?" used":"");b.disabled=p.used||over;b.setAttribute("aria-label","Фигура "+(i+1));
   const mini=document.createElement("div");mini.className="mini";mini.style.gridTemplateColumns="repeat("+p.shape[0].length+",auto)";
   p.shape.forEach(row=>row.forEach(v=>{const c=document.createElement("span");c.className="mini-cell"+(v?" on":"");if(v)c.style.setProperty("--pc",p.color);mini.appendChild(c)}));
-  b.appendChild(mini);b.addEventListener("click",()=>{if(p.used||over)return;selected=i;previewCells=[];$("status").textContent="Нажми на поле";renderPieces();renderBoard()});el.appendChild(b);
+  b.appendChild(mini);b.addEventListener("click",()=>{if(dragMoved||p.used||over)return;selected=i;previewCells=[];$("status").textContent="Перетащи фигуру на поле или нажми на клетку";renderPieces();renderBoard()});b.addEventListener("pointerdown",e=>startDrag(e,i,b));el.appendChild(b);
  });
 }
+function startDrag(e,index,card){
+ if(e.button!==undefined&&e.button!==0)return;
+ if(over||pieces[index].used)return;
+ dragMoved=false;
+ dragState={index,card,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,active:false};
+}
+function buildGhost(index,x,y){
+ if(dragGhost)dragGhost.remove();
+ const p=pieces[index],mini=document.createElement("div");
+ mini.className="mini";mini.style.gridTemplateColumns="repeat("+p.shape[0].length+",auto)";
+ p.shape.forEach(row=>row.forEach(v=>{const c=document.createElement("span");c.className="mini-cell"+(v?" on":"");if(v)c.style.setProperty("--pc",p.color);mini.appendChild(c)}));
+ dragGhost=document.createElement("div");dragGhost.className="drag-ghost";dragGhost.appendChild(mini);
+ dragGhost.style.left=x+"px";dragGhost.style.top=y+"px";document.body.appendChild(dragGhost);
+}
+function updateDragPreview(clientX,clientY){
+ const target=document.elementFromPoint(clientX,clientY);
+ const cell=target&&target.closest?target.closest("#board .cell"):null;
+ previewCells=[];
+ if(cell&&dragState){
+  const x=Number(cell.dataset.x),y=Number(cell.dataset.y),shape=pieces[dragState.index].shape;
+  shape.forEach((row,sy)=>row.forEach((v,sx)=>{if(v)previewCells.push({x:x+sx,y:y+sy})}));
+  dragState.target={x,y,valid:canPlace(shape,x,y)};
+ }else if(dragState)dragState.target=null;
+ renderBoard();
+}
+document.addEventListener("pointermove",e=>{
+ if(!dragState)return;
+ dragState.x=e.clientX;dragState.y=e.clientY;
+ if(!dragState.active&&Math.hypot(e.clientX-dragState.startX,e.clientY-dragState.startY)>7){
+  dragState.active=true;dragMoved=true;selected=dragState.index;dragState.card.classList.add("dragging-source");
+  buildGhost(dragState.index,e.clientX,e.clientY);
+  $("status").textContent="Отпусти фигуру на поле";
+ }
+ if(dragState.active){
+  if(dragGhost){dragGhost.style.left=e.clientX+"px";dragGhost.style.top=e.clientY+"px"}
+  if(dragRaf)cancelAnimationFrame(dragRaf);
+  dragRaf=requestAnimationFrame(()=>updateDragPreview(e.clientX,e.clientY));
+  e.preventDefault();
+ }
+},{passive:false});
+document.addEventListener("pointerup",e=>{
+ if(!dragState)return;
+ const d=dragState;dragState=null;
+ if(dragGhost){dragGhost.remove();dragGhost=null}
+ d.card.classList.remove("dragging-source");
+ if(d.active){
+  const target=document.elementFromPoint(e.clientX,e.clientY);
+  const cell=target&&target.closest?target.closest("#board .cell"):null;
+  previewCells=[];
+  if(cell)placeAt(Number(cell.dataset.x),Number(cell.dataset.y));
+  else{selected=d.index;$("status").textContent="Отпусти фигуру на поле";renderPieces();renderBoard();toast("Перетащи фигуру на игровое поле")}
+  setTimeout(()=>{dragMoved=false},80);
+ }else{
+  selected=d.index;previewCells=[];$("status").textContent="Перетащи фигуру на поле или нажми на клетку";renderPieces();renderBoard();
+  setTimeout(()=>{dragMoved=false},80);
+ }
+});
 function canPlace(shape,x,y){
  if(!shape)return false;
  for(let sy=0;sy<shape.length;sy++)for(let sx=0;sx<shape[sy].length;sx++)if(shape[sy][sx]){
