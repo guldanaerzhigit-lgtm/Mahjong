@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#10182b">
+<meta name="description" content="Block Bloom — яркая блочная головоломка. Расставляй фигуры, очищай линии и побей свой рекорд.">
+<title>Block Bloom — Block Puzzle</title>
+<style>
+:root{--bg:#10182b;--panel:#1a2540;--panel2:#222f4d;--text:#f4f7ff;--muted:#9ba9c8;--pink:#ff7ba8;--gold:#ffd36b;--mint:#71e8c1;--blue:#76a9ff;--purple:#b49aff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 10% 0%,#2b3563 0,transparent 38%),radial-gradient(ellipse at 100% 90%,#173e52 0,transparent 30%),var(--bg);color:var(--text);font-family:Inter,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.app{width:min(100%,700px);margin:auto;padding:14px 15px 30px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:19px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:1000;font-size:23px;letter-spacing:-.8px}
+.logo{width:43px;height:43px;border-radius:15px;background:linear-gradient(145deg,#ff9dbb,#ffd477);display:grid;place-items:center;color:#26304a;font-size:23px;box-shadow:0 8px 22px #ff7ba82b}
+.brand small{display:block;font-size:9px;letter-spacing:2.2px;color:var(--muted);margin-top:2px}
+.icon{width:42px;height:42px;border-radius:14px;background:#ffffff10;border:1px solid #ffffff12;font-size:19px}
+.hero{padding:22px;border-radius:25px;background:linear-gradient(120deg,#ff91b7,#c39cff 56%,#7eaaff);color:#202540;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 15px 35px #080d1e55}
+.hero:after{content:"";position:absolute;right:40px;top:-80px;width:180px;height:180px;border:24px solid #ffffff26;border-radius:50%}
+.kicker{font-size:10px;font-weight:950;letter-spacing:2px;opacity:.75}
+.hero h1{font-size:clamp(27px,7vw,39px);letter-spacing:-1.6px;line-height:1.02;margin:8px 0}
+.hero p{font-size:13px;line-height:1.45;max-width:300px;font-weight:650;opacity:.82;margin:0}
+.hero-art{z-index:1;font-size:clamp(45px,12vw,76px);line-height:1.12;filter:drop-shadow(0 10px 7px #60487530);text-align:center}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0}
+.stat{background:#ffffff0a;border:1px solid #ffffff10;border-radius:17px;padding:12px 7px;text-align:center}
+.stat span{display:block;font-size:10px;letter-spacing:.7px;color:var(--muted);font-weight:850;text-transform:uppercase}
+.stat b{display:block;font-size:23px;letter-spacing:-.5px;margin-top:3px}
+.stat em{font-style:normal;font-size:10px;color:var(--muted)}
+.game-panel{background:linear-gradient(145deg,#1c2743,#172139);border:1px solid #ffffff12;border-radius:24px;padding:12px;box-shadow:0 15px 35px #080d1e55}
+.board-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 3px 12px}
+.board-head strong{font-size:15px}
+.board-head span{font-size:11px;color:var(--muted)}
+.board{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;touch-action:manipulation;user-select:none}
+.cell{aspect-ratio:1;border-radius:5px;background:#0e172b;border:1px solid #ffffff07;min-width:0;transition:background .12s,transform .12s}
+.cell.filled{background:var(--c,#76a9ff);border-color:#ffffff28;box-shadow:inset 0 2px 0 #ffffff38,inset 0 -3px 0 #00000019}
+.cell.preview{background:#71e8c177;border:1px solid #b5ffe8;box-shadow:0 0 0 1px #71e8c155}
+.cell.bad-preview{background:#ff6e8e88;border-color:#ffc1d0}
+.tools{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 2px 10px}
+.tools h2{font-size:14px;margin:0}
+.tools span{font-size:11px;color:var(--muted)}
+.pieces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.piece-card{min-width:0;min-height:107px;border-radius:17px;background:#ffffff08;border:1px solid #ffffff12;display:grid;place-items:center;padding:9px;transition:.15s}
+.piece-card.selected{background:#71e8c116;border-color:var(--mint);box-shadow:0 0 0 2px #71e8c126}
+.piece-card.used{opacity:.25;pointer-events:none}
+.piece-card:disabled{cursor:default}
+.mini{display:grid;gap:3px;touch-action:manipulation}
+.mini-cell{width:clamp(13px,4vw,20px);height:clamp(13px,4vw,20px);border-radius:4px;background:transparent}
+.mini-cell.on{background:var(--pc,#76a9ff);box-shadow:inset 0 2px 0 #ffffff4a,inset 0 -2px 0 #00000017}
+.bottom-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
+.action{padding:12px 10px;border-radius:14px;background:#ffffff0e;border:1px solid #ffffff12;font-size:12px;font-weight:850}
+.action.primary{background:var(--mint);color:#12293a;border-color:transparent}
+.hint{text-align:center;color:var(--muted);font-size:11px;line-height:1.5;margin:11px 4px 2px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,18px);opacity:0;pointer-events:none;background:#f4f7ff;color:#18233d;padding:12px 17px;border-radius:13px;font-size:13px;font-weight:900;box-shadow:0 12px 30px #0005;transition:.2s;max-width:90%;text-align:center;z-index:10}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.modal-back{position:fixed;inset:0;background:#070b18c9;display:none;place-items:center;padding:20px;z-index:20}
+.modal-back.show{display:grid}
+.modal{width:min(390px,100%);border-radius:24px;padding:25px;background:#202b49;border:1px solid #ffffff20;text-align:center;box-shadow:0 25px 80px #0008}
+.modal .big{font-size:52px}.modal h2{margin:7px 0}.modal p{font-size:14px;line-height:1.5;color:var(--muted)}
+.modal-actions{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin-top:17px}
+.modal-actions button{padding:12px 16px;border-radius:13px;background:#ffffff12;font-weight:850}
+.modal-actions .primary{background:var(--mint);color:#12293a}
+@media(min-width:550px){.app{padding:22px 22px 40px}.hero{padding:29px 32px}.game-panel{padding:17px}.board{gap:6px}.cell{border-radius:7px}.piece-card{min-height:125px}.mini-cell{width:22px;height:22px}}
+@media(max-width:350px){.app{padding:10px}.hero{padding:17px}.hero-art{font-size:42px}.board{gap:3px}.cell{border-radius:3px}.piece-card{padding:6px;min-height:95px}.mini-cell{width:12px;height:12px}.stat b{font-size:20px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="blockBloom">
+<header><div class="brand"><div class="logo">▦</div><div>BLOCK BLOOM<small>BLOCK PUZZLE</small></div></div><button class="icon" id="soundBtn" aria-label="Звук выключен">🔇</button></header>
+<section class="hero"><div><div class="kicker">🧠 ВРЕМЯ ДЛЯ СЕБЯ</div><h1>Заполняй.<br>Очищай. Побеждай.</h1><p>Расставляй фигуры, собирай линии и побей собственный рекорд!</p></div><div class="hero-art" aria-hidden="true">🟦🟪<br>🟨🟩🟦</div></section>
+<div class="stats"><div class="stat"><span>Очки</span><b id="score">0</b><em>текущая игра</em></div><div class="stat"><span>Рекорд</span><b id="best">0</b><em>на устройстве</em></div><div class="stat"><span>Линии</span><b id="lines">0</b><em>очищено</em></div></div>
+<section class="game-panel">
+<div class="board-head"><div><strong>Твоё поле</strong><br><span>10 × 10 · без таймера</span></div><span id="status" aria-live="polite">Выбери фигуру ↓</span></div>
+<div class="board" id="board" role="grid" aria-label="Игровое поле 10 на 10"></div>
+<div class="tools"><h2>Выбери фигуру</h2><span>Нажми фигуру → нажми поле</span></div>
+<div class="pieces" id="pieces" aria-label="Доступные фигуры"></div>
+<div class="bottom-actions"><button class="action" id="restart">↻ Новая игра</button><button class="action primary" id="how">❔ Как играть</button></div>
+<p class="hint">Заполняй горизонтальные или вертикальные линии, чтобы очистить их. Фигура должна целиком помещаться на свободные клетки.</p>
+</section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="modal-back" id="modalBack" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal"><div class="big" id="modalIcon">🌟</div><h2 id="modalTitle">Отличная игра!</h2><p id="modalText"></p><div class="modal-actions" id="modalActions"></div></div></div>
+<script>
+(function(){
+"use strict";
+const root=document.getElementById("blockBloom");
+const $=id=>document.getElementById(id);
+const N=10;
+const COLORS=["#76a9ff","#b49aff","#ff7ba8","#ffd36b","#71e8c1","#ff9f76","#7edce8"];
+const SHAPES=[
+[[1]],[[1,1]],[[1],[1]],[[1,1,1]],[[1],[1],[1]],[[1,1,1,1]],[[1],[1],[1],[1]],
+[[1,1,1,1,1]],[[1],[1],[1],[1],[1]],[[1,1],[1,1]],[[1,1,1],[1,1,1]],[[1,1],[1,1],[1,1]],
+[[1,0],[1,0],[1,1]],[[0,1],[0,1],[1,1]],[[1,1],[1,0],[1,0]],[[1,1],[0,1],[0,1]],
+[[1,0],[1,1],[0,1]],[[0,1],[1,1],[1,0]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],
+[[1,1,1],[0,1,0]],[[0,1,0],[1,1,1]],[[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]],
+[[1,1,1],[1,0,0],[1,0,0]],[[1,1,1],[0,0,1],[0,0,1]],[[1,1,1],[0,1,0],[0,1,0]],
+[[1,1,1],[1,1,0]],[[1,1],[1,1],[1,0]],[[1,1,1],[0,1,1]]
+];
+let grid,score=0,lines=0,best=readBest(),pieces=[],selected=-1,sound=false,over=false,toastTimer,previewCells=[];
+function readBest(){try{return Number(localStorage.getItem("blockBloomBest")||0)||0}catch(e){return 0}}
+function saveBest(){try{localStorage.setItem("blockBloomBest",String(best))}catch(e){}}
+function newPiece(){const shape=SHAPES[Math.floor(Math.random()*SHAPES.length)].map(r=>r.slice());return{shape,color:COLORS[Math.floor(Math.random()*COLORS.length)],used:false}}
+function reset(){grid=Array.from({length:N},()=>Array(N).fill(null));score=0;lines=0;pieces=[newPiece(),newPiece(),newPiece()];selected=-1;over=false;previewCells=[];updateStats();renderBoard();renderPieces();$("status").textContent="Выбери фигуру ↓"}
+function updateStats(){$("score").textContent=score;$("best").textContent=best;$("lines").textContent=lines}
+function toast(s){const el=$("toast");el.textContent=s;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),1900)}
+function modal(icon,title,text,buttons){$("modalIcon").textContent=icon;$("modalTitle").textContent=title;$("modalText").textContent=text;const a=$("modalActions");a.innerHTML="";buttons.forEach(x=>{const b=document.createElement("button");b.textContent=x.text;if(x.primary)b.className="primary";b.addEventListener("click",()=>{$("modalBack").classList.remove("show");x.action&&x.action()});a.appendChild(b)});$("modalBack").classList.add("show")}
+function renderBoard(){
+ const board=$("board");board.innerHTML="";
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+  const b=document.createElement("button");b.type="button";b.className="cell";b.setAttribute("role","gridcell");b.setAttribute("aria-label","Ряд "+(y+1)+", столбец "+(x+1)+(grid[y][x]?", занято":" , свободно"));
+  if(grid[y][x]){b.classList.add("filled");b.style.setProperty("--c",grid[y][x])}
+  if(previewCells.some(p=>p.x===x&&p.y===y)){b.classList.add(canPlace(pieces[selected]?.shape,x,y)?"preview":"bad-preview")}
+  b.addEventListener("click",()=>placeAt(x,y));board.appendChild(b);
+ }
+}
+function renderPieces(){
+ const el=$("pieces");el.innerHTML="";
+ pieces.forEach((p,i)=>{
+  const b=document.createElement("button");b.type="button";b.className="piece-card"+(i===selected?" selected":"")+(p.used?" used":"");b.disabled=p.used||over;b.setAttribute("aria-label","Фигура "+(i+1));
+  const mini=document.createElement("div");mini.className="mini";mini.style.gridTemplateColumns="repeat("+p.shape[0].length+",auto)";
+  p.shape.forEach(row=>row.forEach(v=>{const c=document.createElement("span");c.className="mini-cell"+(v?" on":"");if(v)c.style.setProperty("--pc",p.color);mini.appendChild(c)}));
+  b.appendChild(mini);b.addEventListener("click",()=>{if(p.used||over)return;selected=i;previewCells=[];$("status").textContent="Нажми на поле";renderPieces();renderBoard()});el.appendChild(b);
+ });
+}
+function canPlace(shape,x,y){
+ if(!shape)return false;
+ for(let sy=0;sy<shape.length;sy++)for(let sx=0;sx<shape[sy].length;sx++)if(shape[sy][sx]){
+  const gx=x+sx,gy=y+sy;if(gx<0||gy<0||gx>=N||gy>=N||grid[gy][gx])return false;
+ }
+ return true;
+}
+function placeAt(x,y){
+ if(over)return;
+ if(selected<0||!pieces[selected]||pieces[selected].used){toast("Сначала выбери фигуру");return}
+ const p=pieces[selected];if(!canPlace(p.shape,x,y)){toast("Здесь фигура не помещается");return}
+ let placed=0;
+ p.shape.forEach((row,sy)=>row.forEach((v,sx)=>{if(v){grid[y+sy][x+sx]=p.color;placed++}}));
+ score+=placed; p.used=true;selected=-1;previewCells=[];
+ let clearRows=[],clearCols=[];
+ for(let yy=0;yy<N;yy++)if(grid[yy].every(Boolean))clearRows.push(yy);
+ for(let xx=0;xx<N;xx++)if(grid.every(row=>row[xx]))clearCols.push(xx);
+ const clearSet=new Set();
+ clearRows.forEach(yy=>{for(let xx=0;xx<N;xx++)clearSet.add(yy*N+xx)});
+ clearCols.forEach(xx=>{for(let yy=0;yy<N;yy++)clearSet.add(yy*N+xx)});
+ if(clearSet.size){
+  clearSet.forEach(i=>{grid[Math.floor(i/N)][i%N]=null});
+  const count=clearRows.length+clearCols.length;lines+=count;score+=count*10+Math.max(0,count-1)*5;
+  toast("Линия очищена! +"+(count*10+Math.max(0,count-1)*5)+" очков ✨");
+ }else toast("Отлично! +"+placed+" очков");
+ if(score>best){best=score;saveBest()}
+ if(pieces.every(x=>x.used)){pieces=[newPiece(),newPiece(),newPiece()]}
+ updateStats();renderBoard();renderPieces();
+ if(!hasMove()){over=true;$("status").textContent="Игра окончена";renderPieces();setTimeout(()=>modal("🌟","Хорошая попытка!","Очки: "+score+" · Очищено линий: "+lines+" · Рекорд: "+best,[{text:"Ещё раз",primary:true,action:reset}] ),180)}
+ else $("status").textContent="Выбери следующую фигуру";
+}
+function hasMove(){
+ for(const p of pieces){if(p.used)continue;for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(canPlace(p.shape,x,y))return true}
+ return false;
+}
+function showHow(){modal("🧩","Как играть","1. Выбери одну из трёх фигур. 2. Нажми на клетку, где фигура должна появиться. 3. Заполни целый ряд или столбец, чтобы очистить линию. 4. Когда использованы все три фигуры, появятся новые. Игра заканчивается, если ни одна фигура больше не помещается.",[{text:"Понятно",primary:true}])}
+$("restart").addEventListener("click",()=>modal("↻","Начать заново?","Текущий счёт будет сброшен.",[{text:"Продолжить игру"},{text:"Новая игра",primary:true,action:reset}]));
+$("how").addEventListener("click",showHow);
+$("soundBtn").addEventListener("click",()=>{sound=!sound;$("soundBtn").textContent=sound?"🔔":"🔇";$("soundBtn").setAttribute("aria-label",sound?"Звук включён":"Звук выключен");toast(sound?"Звук включён":"Звук выключен")});
+$("modalBack").addEventListener("click",e=>{if(e.target===$("modalBack"))$("modalBack").classList.remove("show")});
+reset();
+})();
+</script>
+</body>
+</html>
