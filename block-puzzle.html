@@ -128,8 +128,9 @@ function renderPieces(){
 function startDrag(e,index,card){
  if(e.button!==undefined&&e.button!==0)return;
  if(over||pieces[index].used)return;
+ try{card.setPointerCapture(e.pointerId)}catch(err){}
  dragMoved=false;
- dragState={index,card,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,active:false};
+ dragState={index,card,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,active:false,pointerId:e.pointerId};
 }
 function buildGhost(index,x,y){
  if(dragGhost)dragGhost.remove();
@@ -139,9 +140,21 @@ function buildGhost(index,x,y){
  dragGhost=document.createElement("div");dragGhost.className="drag-ghost";dragGhost.appendChild(mini);
  dragGhost.style.left=x+"px";dragGhost.style.top=y+"px";document.body.appendChild(dragGhost);
 }
+function findDropCell(clientX,clientY){
+ const board=$("board"),rect=board.getBoundingClientRect();
+ if(clientX<rect.left||clientX>rect.right||clientY<rect.top||clientY>rect.bottom)return null;
+ const cells=board.querySelectorAll(".cell");
+ let bestCell=null,bestDistance=Infinity;
+ cells.forEach(cell=>{
+  const r=cell.getBoundingClientRect();
+  const dx=clientX-(r.left+r.width/2),dy=clientY-(r.top+r.height/2);
+  const d=dx*dx+dy*dy;
+  if(d<bestDistance){bestDistance=d;bestCell=cell}
+ });
+ return bestCell;
+}
 function updateDragPreview(clientX,clientY){
- const target=document.elementFromPoint(clientX,clientY);
- const cell=target&&target.closest?target.closest("#board .cell"):null;
+ const cell=findDropCell(clientX,clientY);
  previewCells=[];
  if(cell&&dragState){
   const x=Number(cell.dataset.x),y=Number(cell.dataset.y),shape=pieces[dragState.index].shape;
@@ -159,7 +172,7 @@ document.addEventListener("pointermove",e=>{
   $("status").textContent="Отпусти фигуру на поле";
  }
  if(dragState.active){
-  if(dragGhost){dragGhost.style.left=e.clientX+"px";dragGhost.style.top=e.clientY+"px"}
+  if(dragGhost){const p=pieces[dragState.index];const w=p.shape[0].length*21,h=p.shape.length*21;dragGhost.style.left=(e.clientX+w/2)+"px";dragGhost.style.top=(e.clientY+h/2)+"px"}
   if(dragRaf)cancelAnimationFrame(dragRaf);
   dragRaf=requestAnimationFrame(()=>updateDragPreview(e.clientX,e.clientY));
   e.preventDefault();
@@ -171,11 +184,10 @@ document.addEventListener("pointerup",e=>{
  if(dragGhost){dragGhost.remove();dragGhost=null}
  d.card.classList.remove("dragging-source");
  if(d.active){
-  const target=document.elementFromPoint(e.clientX,e.clientY);
-  const cell=target&&target.closest?target.closest("#board .cell"):null;
+  const cell=findDropCell(e.clientX,e.clientY);
   previewCells=[];
   if(cell)placeAt(Number(cell.dataset.x),Number(cell.dataset.y));
-  else{selected=d.index;$("status").textContent="Отпусти фигуру на поле";renderPieces();renderBoard();toast("Перетащи фигуру на игровое поле")}
+  else{selected=d.index;$("status").textContent="Отпусти фигуру на поле";renderPieces();renderBoard();toast("Перетащи фигуру внутрь игрового поля")}
   setTimeout(()=>{dragMoved=false},80);
  }else{
   selected=d.index;previewCells=[];$("status").textContent="Перетащи фигуру на поле или нажми на клетку";renderPieces();renderBoard();
