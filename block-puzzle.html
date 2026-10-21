@@ -99,7 +99,8 @@ const SHAPES=[
 [[1,1,1],[1,0,0],[1,0,0]],[[1,1,1],[0,0,1],[0,0,1]],[[1,1,1],[0,1,0],[0,1,0]],
 [[1,1,1],[1,1,0]],[[1,1],[1,1],[1,0]],[[1,1,1],[0,1,1]]
 ];
-let grid,score=0,lines=0,best=readBest(),pieces=[],selected=-1,sound=false,over=false,toastTimer,previewCells=[];\nlet dragState=null,dragMoved=false,dragGhost=null,dragRaf=0;
+let grid,score=0,lines=0,best=readBest(),pieces=[],selected=-1,sound=false,over=false,toastTimer,previewCells=[];
+let dragState=null,dragMoved=false,dragGhost=null,dragRaf=0;
 function readBest(){try{return Number(localStorage.getItem("blockBloomBest")||0)||0}catch(e){return 0}}
 function saveBest(){try{localStorage.setItem("blockBloomBest",String(best))}catch(e){}}
 function newPiece(){const shape=SHAPES[Math.floor(Math.random()*SHAPES.length)].map(r=>r.slice());return{shape,color:COLORS[Math.floor(Math.random()*COLORS.length)],used:false}}
