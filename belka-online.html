@@ -15,11 +15,13 @@ import { getDatabase, ref, set, get, onValue, runTransaction, update, remove, se
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 // Вставь настройки веб-приложения из Firebase Console → Project settings → Your apps.
 const firebaseConfig = {
-  apiKey: "PASTE_API_KEY_HERE",
-  authDomain: "mail-agent-9c5ca.firebaseapp.com",
+  apiKey: "AIzaSyAGpTcKL4PiHDx9Mdsvba-iSt4l5ME3UEc",
+  authDomain: "belka-9a995.firebaseapp.com",
   databaseURL: "PASTE_REALTIME_DATABASE_URL_HERE",
-  projectId: "mail-agent-9c5ca",
-  appId: "PASTE_APP_ID_HERE"
+  projectId: "belka-9a995",
+  storageBucket: "belka-9a995.firebasestorage.app",
+  messagingSenderId: "644712910963",
+  appId: "1:644712910963:web:e31247b42ab396a7d0da06"
 };
 const $=id=>document.getElementById(id), suits=["♠","♥","♦","♣"], ranks=["7","8","9","J","Q","K","10","A"];
 const strength={"7":1,"8":2,"9":3,"J":4,"Q":5,"K":6,"10":7,"A":8}, points={"7":0,"8":0,"9":0,"J":2,"Q":3,"K":4,"10":10,"A":11};
