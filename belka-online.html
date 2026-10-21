@@ -31,7 +31,7 @@ function friendlyError(e){const code=e?.code||"";const text=e?.message||String(e
 function randomCode(){return Math.random().toString(36).slice(2,8).toUpperCase()}
 function deck(){return suits.flatMap(s=>ranks.map(r=>({s,r,id:r+s})))}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function cardImageMarkup(c){const suitCode={"♠":"S","♥":"H","♦":"D","♣":"C"}[c.s];const rankCode={"A":"A","K":"K","Q":"Q","J":"J","10":"10","9":"9","8":"8","7":"7"}[c.r];const code=rankCode+suitCode;const urls=["https://deckofcardsapi.com/static/img/"+code+".png","https://www.deckofcardsapi.com/static/img/"+code+".png"];return '<img src="'+urls[0]+'" alt="'+escapeHtml(c.r+" "+c.s)+'" loading="lazy" onerror="if(!this.dataset.fallback){this.dataset.fallback="1";this.src="'+urls[1]+'"}else{this.outerHTML=\'<span class="card-face">\'+\'<span>\'+this.alt.split(" ")[0]+\'</span><span>\'+this.alt.split(" ")[1]+\'</span></span>\'}">}
+function cardImageMarkup(c){const suitCode={"♠":"S","♥":"H","♦":"D","♣":"C"}[c.s];const rankCode={"A":"A","K":"K","Q":"Q","J":"J","10":"0","9":"9","8":"8","7":"7"}[c.r];const code=rankCode+suitCode;return '<img src="https://deckofcardsapi.com/static/img/'+code+'.png" alt="'+escapeHtml(c.r+" "+c.s)+'" loading="lazy">'}
 function cardText(c){return c.r+c.s}
 function team(i){return i%2===0?0:1}
 function legal(hand,lead){if(!lead)return hand;const same=hand.filter(c=>c.s===lead);return same.length?same:hand}
